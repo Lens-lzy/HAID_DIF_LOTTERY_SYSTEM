@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>海大集团2025年数智节·抽奖系统</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root { --bd:#ddd; --muted:#666; }
+    body { font-family: system-ui,Segoe UI,Roboto,Helvetica,Arial; margin: 24px; }
+    .card { border:1px solid var(--bd); border-radius:12px; padding:16px; margin-bottom:16px; }
+    .grid { display:grid; grid-template-columns: repeat(4,minmax(160px,1fr)); gap:12px; }
+    input,button,select { padding:10px 12px; border-radius:10px; border:1px solid #ccc; }
+    h1 { margin:0 0 16px; } h2 { margin:0 0 12px; }
+    .ok { color:#0a7; } .err { color:#c00; } .muted{ color:var(--muted); font-size:12px; }
+
+    /* Modal */
+    .overlay { position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:999; }
+    .modal { background:#fff; border-radius:12px; padding:16px; width:min(520px,90vw); box-shadow:0 10px 24px rgba(0,0,0,.2); }
+    .option-item { padding:8px 10px; border:1px solid #ccc; border-radius:8px; margin:6px 0; display:flex; gap:10px; align-items:center; }
+    .modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:10px; }
+    .btn-primary { background:#0a7; color:#fff; border-color:#0a7; }
+    .btn-ghost { background:#fff; color:#333; }
+    .row-2 { display:grid; grid-template-columns: repeat(2,1fr); gap:12px; }
+
+    /* ===== winners table 美化 ===== */
+    .table-clean {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,.04);
+    }
+    .table-clean thead th {
+      position: sticky; top: 0; z-index: 1;
+      background: #fafafa;
+      border-bottom: 1px solid #eee;
+      font-weight: 600;
+      color: #444;
+      white-space: nowrap;
+    }
+    .table-clean th, .table-clean td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f3f3f3;
+      vertical-align: middle;
+    }
+    .table-clean tbody tr:nth-child(odd) td { background: #fff; }
+    .table-clean tbody tr:nth-child(even) td { background: #fcfcfc; }
+    .table-clean tbody tr:hover td { background: #f6fbff; }
+
+    .nowrap { white-space: nowrap; }
+    .right  { text-align: right; }
+    .mono   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .dim    { color:#666; }
+
+    /* 奖项徽章 */
+    .pill {
+      display:inline-block; padding: 4px 10px; border-radius: 999px;
+      font-size: 12px; font-weight: 600; line-height: 1; border: 1px solid transparent;
+    }
+    .pill-1 { background:#fff0f0; color:#b10000; border-color:#ffd6d6; }   /* 一等奖 */
+    .pill-2 { background:#fff7e6; color:#b45d00; border-color:#ffe2b3; }   /* 二等奖 */
+    .pill-3 { background:#eef7ff; color:#0b63a6; border-color:#d6ecff; }   /* 三等奖 */
+    .pill-c { background:#f5f5f5; color:#444;    border-color:#e8e8e8; }   /* 阳光普照 */
+
+    /* 小屏隐藏“操作员/机器”两列，可按需调整 */
+    @media (max-width: 960px) {
+      .col-operator, .col-client { display:none; }
+    }
+
+    /* “复制ID”小按钮 */
+    .copy-btn {
+      margin-left: 8px; padding: 2px 6px; font-size: 12px;
+      border: 1px solid #ddd; border-radius: 8px; background:#fff; cursor:pointer;
+    }
+    .copy-btn:hover { background:#f6f6f6; }
+
+    /* 整表默认居中 */
+    .table-clean th,
+    .table-clean td { 
+      text-align: center !important; 
+      vertical-align: middle;
+    }
+
+    /* 指定列左对齐：给相应 th/td 加 .left 即生效 */
+    .table-clean th.left,
+    .table-clean td.left {
+      text-align: left !important;
+    }
+
+    /* 竖向分隔线 */
+    .table-clean th,
+    .table-clean td {
+      border-right: 1px solid #e9e9e9;   /* 列与列之间的竖线 */
+    }
+    .table-clean thead th { 
+      border-bottom: 1px solid #e6e6e6;  /* 表头横线更清晰一点 */
+    }
+    .table-clean tr > *:last-child {
+      border-right: none;                /* 最后一列不画竖线 */
+    }
+  </style>
+</head>
+<body>
+  <h1>2025年海大集团数智节·抽奖系统</h1>
+
+  <!-- 登录 -->
+  <div class="card" id="loginBox">
+    <h2>登录</h2>
+    <div>用户名：<input id="u" placeholder="" /></div>
+    <div style="margin-top:8px;">密码：<input id="p" type="password" placeholder="" /></div>
+    <div style="margin-top:10px;"><button id="loginBtn">登录</button></div>
+    <div id="loginMsg" class="err"></div>
+  </div>
+
+  <!-- 状态 -->
+  <div class="card" id="stateBox" style="display:none;">
+    <h2>奖池状态</h2>
+    <div class="grid" id="grid"></div>
+    <div class="muted">提示：库存通过 Socket 实时更新；发放只在“确认发放”后才扣减。</div>
+  </div>
+
+  <!-- 抽奖面板 -->
+  <div class="card" id="drawBox" style="display:none;">
+    <h2>抽奖</h2>
+    <div class="row-2">
+      <div>工位/操作员：<input id="operator" placeholder=""></div>
+      <div>本机标识：<input id="clientId" placeholder="PC-1"></div>
+      <div>抽奖人姓名：<input id="empName" placeholder=""></div>
+      <div>工号：<input id="empId" placeholder=""></div>
+      <div>本次抽奖次数（1~5）：<input id="count" type="number" value="1" min="1" max="5"></div>
+    </div>
+    <div class="muted" style="margin-top:6px;">
+      规则：本次系统随机抽出匹配抽奖次数的结果，仅能选择其中 1 个进行发放；确认后该工号将无法再次抽奖。
+    </div>
+
+    <div style="margin-top:10px;">
+      <button id="btnStart">开始抽奖</button>
+    </div>
+    <div id="result" style="margin-top:12px;"></div>
+  </div>
+
+  <!-- 中奖名单 -->
+  <div class="card" id="winnersBox" style="display:none;">
+    <h2>中奖名单</h2>
+    <div class="row-2" style="grid-template-columns: repeat(4,1fr);">
+      <div>工号：<input id="w_empId" placeholder="" /></div>
+      <div>奖项：
+        <select id="w_level">
+          <option value="">全部</option>
+          <option>一等奖</option><option>二等奖</option>
+          <option>三等奖</option><option>阳光普照奖</option>
+        </select>
+      </div>
+      <div>起始：<input id="w_since" type="datetime-local" /></div>
+      <div>截止：<input id="w_until" type="datetime-local" /></div>
+    </div>
+    <div style="margin-top:8px;">
+      <button id="w_btnQuery">查询</button>
+      <button id="w_btnExport">导出CSV</button>
+    </div>
+    <table class="table-clean" id="w_table">
+          <thead>
+            <tr>
+              <th class="nowrap">时间</th>
+              <th>姓名</th>
+              <th>工号</th>
+              <th class="nowrap">奖项</th>
+              <th class="col-operator">操作员</th>
+              <th class="col-client">机器</th>
+              <th class="nowrap">记录ID</th>
+            </tr>
+          </thead>
+          <tbody id="w_tbody"></tbody>
+        </table>
+    <div style="margin-top:8px;">
+      <button id="w_prev">上一页</button>
+      <span id="w_pageInfo"></span>
+      <button id="w_next">下一页</button>
+    </div>
+  </div>
+
+  <!-- 弹窗：结果单选 -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h2 style="margin-bottom:8px;">开奖啦！请选择最终获奖项</h2>
+      <div id="optionsList"></div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="btnCancel">取消</button>
+        <button class="btn-primary" id="btnConfirm">确认发放</button>
+      </div>
+      <div class="muted" id="modalTips" style="margin-top:6px;"></div>
+    </div>
+  </div>
+
+  <script>
+    // 若本页通过 3001 打开（误端口），修正到 3000 API
+    const API = location.origin.replace(':3001', ':3000');
+    let token = localStorage.getItem('x_token') || '';
+
+    const loginBox = document.getElementById('loginBox');
+    const stateBox = document.getElementById('stateBox');
+    const drawBox  = document.getElementById('drawBox');
+    const winnersBox = document.getElementById('winnersBox');
+    const grid = document.getElementById('grid');
+    const result = document.getElementById('result');
+
+    // ===== 公共：状态渲染 =====
+    function renderState(prizes){
+      grid.innerHTML='';
+      prizes.forEach(p=>{
+        const d=document.createElement('div');
+        d.className='card';
+        d.innerHTML=`<div><b>${p.level}</b></div>
+          <div>${p.remaining} / ${p.total}</div>`;
+        grid.appendChild(d);
+      });
+    }
+    async function getState() {
+      const r = await fetch(`${API}/api/state`);
+      const j = await r.json();
+      renderState(j.prizes);
+    }
+
+    // ===== 登录 =====
+    async function doLogin(u,p){
+      const r = await fetch(`${API}/api/login`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ username:u, password:p })
+      });
+      return r.json();
+    }
+
+    async function afterLogin(){
+      loginBox.style.display='none';
+      stateBox.style.display='block';
+      drawBox.style.display='block';
+      winnersBox.style.display='block';
+      await getState();
+      initSocket();
+      await fetchWinners(); // 自动加载中奖名单
+    }
+
+    document.getElementById('loginBtn').onclick = async ()=>{
+      const u = document.getElementById('u').value.trim();
+      const p = document.getElementById('p').value.trim();
+      const btn = document.getElementById('loginBtn');
+      const msg = document.getElementById('loginMsg');
+      btn.disabled = true; msg.textContent = '';
+      try{
+        const j = await doLogin(u,p);
+        if (j.ok && j.role==='staff') {
+          token = j.token; localStorage.setItem('x_token', token);
+          await afterLogin();
+        } else {
+          msg.textContent = j.reason || '登录失败';
+        }
+      }catch(e){ msg.textContent = e.message || '网络错误'; }
+      finally{ btn.disabled = false; }
+    };
+    // Enter 快捷登录
+    document.addEventListener('keydown', (ev)=>{
+      if (ev.key==='Enter' && loginBox.style.display!=='none') {
+        document.getElementById('loginBtn').click();
+      }
+    });
+
+    // ====== 抽奖主流程 ======
+    let sessionId = null;
+    let options = [];
+
+    const overlay = document.getElementById('overlay');
+    const optionsList = document.getElementById('optionsList');
+    const modalTips = document.getElementById('modalTips');
+
+    function openModal() { overlay.style.display='flex'; }
+    function closeModal() { overlay.style.display='none'; optionsList.innerHTML=''; modalTips.textContent=''; }
+
+    document.getElementById('btnStart').onclick = async ()=>{
+      result.textContent='';
+      sessionId = null; options = [];
+
+      const empName = document.getElementById('empName').value.trim();
+      const empId   = document.getElementById('empId').value.trim();
+      const count   = Number(document.getElementById('count').value || 1);
+      if (!empId) { result.className='err'; result.textContent='请填写工号'; return; }
+      if (count < 1 || count > 5) { result.className='err'; result.textContent='抽奖次数需在 1~5 之间'; return; }
+
+      const btn = document.getElementById('btnStart');
+      btn.disabled = true;
+      try{
+        const r = await fetch(`${API}/api/startDraw`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json','x-auth-token':token},
+          body: JSON.stringify({ empId, empName, count })
+        });
+        const j = await r.json();
+        if (!r.ok || !j.ok) {
+          result.className='err';
+          result.textContent = '⚠️ ' + (j.reason || '抽奖启动失败');
+          return;
+        }
+
+        // 渲染弹窗
+        sessionId = j.sessionId;
+        options = Array.isArray(j.options) ? j.options : [];
+        if (options.length===0) {
+          result.className='err'; result.textContent='没有可选择的结果，请重试';
+          return;
+        }
+        optionsList.innerHTML = '';
+        options.forEach((lv, idx)=>{
+          const id = 'opt_'+idx;
+          const row = document.createElement('div');
+          row.className = 'option-item';
+          row.innerHTML = `<input type="radio" name="opt" id="${id}" value="${idx}">
+                           <label for="${id}">${lv}</label>`;
+          optionsList.appendChild(row);
+        });
+        modalTips.textContent = '提示：这是本次真实抽取的结果集，确认后仅发放你选择的 1 个，其余作废；随后该工号将被锁定。';
+        openModal();
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    document.getElementById('btnCancel').onclick = ()=>{
+      // 取消仅关闭弹窗，本次抽取结果集作废（不扣库存）
+      closeModal();
+      result.className='muted';
+      result.textContent='已取消本次发放；如需重新抽取，请再次点击“开始抽奖”。';
+    };
+
+    document.getElementById('btnConfirm').onclick = async ()=>{
+      const checked = document.querySelector('input[name="opt"]:checked');
+      if (!checked) { modalTips.textContent='请先选择一个奖项'; return; }
+      const chosenIndex = Number(checked.value);
+
+      const body = {
+        sessionId,
+        chosenIndex,
+        operator: document.getElementById('operator').value.trim(),
+        clientId: document.getElementById('clientId').value.trim()
+      };
+      const btn = document.getElementById('btnConfirm');
+      btn.disabled = true;
+      try{
+        const r = await fetch(`${API}/api/confirmChoice`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json','x-auth-token':token},
+          body: JSON.stringify(body)
+        });
+        const j = await r.json();
+        if (!r.ok || !j.ok) {
+          modalTips.textContent = '⚠️ ' + (j.reason || '确认失败，请重试');
+          return;
+        }
+
+        closeModal();
+        result.className='ok';
+        result.textContent = `✅ 已发放：${j.chosenLevel}（记录ID：${j.drawId}）。该工号已被锁定，不能再次抽奖。`;
+
+        // 清空字段（防止误触同一工号）
+        document.getElementById('empName').value = '';
+        document.getElementById('empId').value = '';
+        sessionId = null; options = [];
+
+        // 刷新库存 & 刷新中奖名单第一页
+        await getState();
+        W_PAGE = 0; await fetchWinners();
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    // ====== Socket 实时刷新 ======
+    function initSocket(){
+      const s = document.createElement('script');
+      s.src = `${API}/socket.io/socket.io.js`;
+      s.onload = ()=>{
+        const io_ = window.io;
+        const socket = io_(API, { transports:['websocket'] });
+        socket.on('state', (payload)=> renderState(payload.prizes));
+      };
+      document.body.appendChild(s);
+    }
+
+    // ===== Winners 列表（与 admin 端一致的查询接口）=====
+    function dtValToMs(v){ return v ? new Date(v).getTime() : null; }
+    function fmt(ms){ return new Date(ms).toLocaleString(); }
+
+    // let W_PAGE = 0, W_LIMIT = 50, W_TOTAL = 0;
+
+    // async function fetchWinners() {
+    //   const empId = document.getElementById('w_empId').value.trim();
+    //   const level = document.getElementById('w_level').value;
+    //   const since = dtValToMs(document.getElementById('w_since').value);
+    //   const until = dtValToMs(document.getElementById('w_until').value);
+
+    //   const qs = new URLSearchParams({
+    //     empId, level,
+    //     since: since ?? '', until: until ?? '',
+    //     limit: W_LIMIT, offset: String(W_PAGE*W_LIMIT)
+    //   });
+    //   const r = await fetch(`${API}/api/draws?` + qs.toString(), { headers:{'x-auth-token':token} });
+    //   const j = await r.json();
+    //   if (!j.ok) { alert(j.reason || '查询失败'); return; }
+
+    //   W_TOTAL = j.total || 0;
+    //   const tbody = document.getElementById('w_tbody');
+    //   tbody.innerHTML = '';
+    //   (j.items||[]).forEach(row=>{
+    //     const tr = document.createElement('tr');
+    //     tr.innerHTML = `<td>${fmt(row.ts)}</td>
+    //       <td>${row.emp_name||''}</td>
+    //       <td>${row.emp_id||''}</td>
+    //       <td>${row.prize_level}</td>
+    //       <td>${row.operator||''}</td>
+    //       <td>${row.client_id||''}</td>
+    //       <td>${row.id}</td>`;
+    //     tbody.appendChild(tr);
+    //   });
+    //   document.getElementById('w_pageInfo').textContent =
+    //     `第 ${W_PAGE+1} 页 / 共 ${Math.max(1, Math.ceil(W_TOTAL/W_LIMIT))} 页（${W_TOTAL} 条）`;
+    // }
+    let W_PAGE = 0, W_LIMIT = 50, W_TOTAL = 0;
+
+    // 奖项 → 彩色徽章
+      function badge(level){
+        const map = {
+          '一等奖': 'pill pill-1',
+          '二等奖': 'pill pill-2',
+          '三等奖': 'pill pill-3',
+          '阳光普照奖': 'pill pill-c'
+        };
+        const cls = map[level] || 'pill pill-c';
+        return `<span class="${cls}">${level}</span>`;
+      }
+      // 时间格式（本地）
+      function fmt(ms){ return new Date(ms).toLocaleString(); }
+
+      // 查询并渲染 tbody（整段替换你原来的 fetchWinners）
+      async function fetchWinners() {
+        const empId = document.getElementById('w_empId').value.trim();
+        const level = document.getElementById('w_level').value;
+        const dtValToMs = v => v ? new Date(v).getTime() : null;
+        const since = dtValToMs(document.getElementById('w_since').value);
+        const until = dtValToMs(document.getElementById('w_until').value);
+
+        const qs = new URLSearchParams({
+          empId, level,
+          since: since ?? '', until: until ?? '',
+          limit: W_LIMIT, offset: String(W_PAGE*W_LIMIT)
+        });
+        const r = await fetch(`${API}/api/draws?` + qs.toString(), { headers:{'x-auth-token':token} });
+        const j = await r.json();
+        if (!j.ok) { alert(j.reason || '查询失败'); return; }
+
+        W_TOTAL = j.total || 0;
+        const tbody = document.getElementById('w_tbody');
+        tbody.innerHTML = '';
+
+        (j.items||[]).forEach(row=>{
+          const idShort = (row.id || '').slice(0,6) + '…';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="nowrap dim">${fmt(row.ts)}</td>
+            <td>${row.emp_name||''}</td>
+            <td class="mono">${row.emp_id||''}</td>
+            <td>${badge(row.prize_level)}</td>
+            <td class="col-operator dim">${row.operator||''}</td>
+            <td class="col-client dim">${row.client_id||''}</td>
+            <td class="mono nowrap">
+              <span title="${row.id}">${idShort}</span>
+              <button class="copy-btn" data-copy="${row.id}">复制</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('w_pageInfo').textContent =
+          `第 ${W_PAGE+1} 页 / 共 ${Math.max(1, Math.ceil(W_TOTAL/W_LIMIT))} 页（${W_TOTAL} 条）`;
+      }
+
+      // 复制ID（加在 <script> 末尾一次即可，别重复加）
+      document.addEventListener('click', (e)=>{
+        const btn = e.target.closest('.copy-btn');
+        if (!btn) return;
+        const text = btn.getAttribute('data-copy') || '';
+        navigator.clipboard.writeText(text).then(()=>{
+          const old = btn.textContent;
+          btn.textContent = '已复制';
+          setTimeout(()=>btn.textContent = old, 900);
+        });
+      });
+
+    document.getElementById('w_btnQuery').onclick = ()=>{ W_PAGE=0; fetchWinners(); };
+    document.getElementById('w_prev').onclick   = ()=>{ if (W_PAGE>0){ W_PAGE--; fetchWinners(); } };
+    document.getElementById('w_next').onclick   = ()=>{
+      const maxPage = Math.max(0, Math.ceil(W_TOTAL/W_LIMIT)-1);
+      if (W_PAGE < maxPage){ W_PAGE++; fetchWinners(); }
+    };
+    document.getElementById('w_btnExport').onclick = ()=>{
+      const empId = document.getElementById('w_empId').value.trim();
+      const level = document.getElementById('w_level').value;
+      const since = dtValToMs(document.getElementById('w_since').value);
+      const until = dtValToMs(document.getElementById('w_until').value);
+      const qs = new URLSearchParams({
+        empId, level, since: since ?? '', until: until ?? '', limit: 10000, offset: 0
+      });
+      fetch(`${API}/api/draws/export?` + qs.toString(), { headers:{'x-auth-token':token} })
+        .then(r=>r.blob())
+        .then(b=>{
+          const url = URL.createObjectURL(b);
+          const a = document.createElement('a'); a.href = url; a.download = 'winners.csv'; a.click();
+          setTimeout(()=>URL.revokeObjectURL(url), 1000);
+        });
+    };
+  </script>
+</body>
+</html>

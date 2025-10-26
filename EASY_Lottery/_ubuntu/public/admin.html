@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>2025年海大集团数智节·管理员端</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui,Segoe UI,Roboto,Helvetica,Arial; margin: 24px; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+    .card { border:1px solid #ddd; border-radius:12px; padding:16px; margin-bottom:16px; }
+    input,button,select { padding:10px 12px; border-radius:10px; border:1px solid #ccc; }
+    table { border-collapse: collapse; width:100%; }
+    th,td { border:1px solid #eee; padding:8px; text-align:left; }
+    /* 让表头和单元格都水平居中 */
+    .table-clean thead th { text-align: center; }
+    .table-clean tbody td { text-align: center; }
+
+    h2 { margin:0 0 12px; }
+    .ok { color:#0a7; } .err { color:#c00; } .muted{ color:#666; font-size:12px; }
+        /* ===== winners table 美化 ===== */
+    .table-clean {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,.04);
+    }
+    .table-clean thead th {
+      position: sticky; top: 0; z-index: 1;
+      background: #fafafa;
+      border-bottom: 1px solid #eee;
+      font-weight: 600;
+      color: #444;
+      white-space: nowrap;
+    }
+    .table-clean th, .table-clean td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f3f3f3;
+      vertical-align: middle;
+    }
+    .table-clean tbody tr:nth-child(odd) td { background: #fff; }
+    .table-clean tbody tr:nth-child(even) td { background: #fcfcfc; }
+    .table-clean tbody tr:hover td { background: #f6fbff; }
+
+    .nowrap { white-space: nowrap; }
+    .right  { text-align: right; }
+    .mono   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .dim    { color:#666; }
+
+    /* 奖项徽章 */
+    .pill {
+      display:inline-block; padding: 4px 10px; border-radius: 999px;
+      font-size: 12px; font-weight: 600; line-height: 1; border: 1px solid transparent;
+    }
+    .pill-1 { background:#fff0f0; color:#b10000; border-color:#ffd6d6; }   /* 一等奖 */
+    .pill-2 { background:#fff7e6; color:#b45d00; border-color:#ffe2b3; }   /* 二等奖 */
+    .pill-3 { background:#eef7ff; color:#0b63a6; border-color:#d6ecff; }   /* 三等奖 */
+    .pill-c { background:#f5f5f5; color:#444;    border-color:#e8e8e8; }   /* 阳光普照 */
+
+    /* 小屏隐藏“操作员/机器”两列，可按需调整 */
+    @media (max-width: 960px) {
+      .col-operator, .col-client { display:none; }
+    }
+
+    /* “复制ID”小按钮 */
+    .copy-btn {
+      margin-left: 8px; padding: 2px 6px; font-size: 12px;
+      border: 1px solid #ddd; border-radius: 8px; background:#fff; cursor:pointer;
+    }
+    .copy-btn:hover { background:#f6f6f6; }
+    /* ===== 看板美化 ===== */
+    .board-wrap { display:grid; grid-template-columns: 1.3fr 1fr; gap:12px; }
+    .board-section { background:#fff; border:1px solid #eee; border-radius:12px; padding:12px; }
+    .board-title { font-weight:700; margin-bottom:6px; }
+    .board-list { margin:0; padding:0; list-style:none; }
+    .board-list li { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed #f0f0f0; }
+    .board-list li:last-child { border-bottom:none; }
+    .board-key { color:#666; }
+    .board-val { font-weight:600; }
+
+    .kpi-grid { display:grid; grid-template-columns: repeat(4,1fr); gap:8px; }
+    .kpi { background:#fafafa; border:1px solid #eee; border-radius:10px; padding:10px; text-align:center; }
+    .kpi .label { font-size:12px; color:#666; }
+    .kpi .num { font-size:18px; font-weight:700; margin-top:4px; }
+
+    .tag { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; border:1px solid transparent; }
+    .tag-mt { background:#eef7ff; color:#0b63a6; border-color:#d6ecff; }   /* m_t */
+    .tag-dt { background:#fff7e6; color:#b45d00; border-color:#ffe2b3; }   /* d_t */
+    .tag-pna{ background:#fff0f0; color:#b10000; border-color:#ffd6d6; }   /* p_na */
+    .tag-pc { background:#f5f5f5; color:#444;    border-color:#e8e8e8; }   /* p_c */
+
+    .board-tip { margin-top:8px; font-size:12px; color:#666; line-height:1.6; background:#fcfcfc; border:1px solid #f0f0f0; border-radius:8px; padding:8px; }
+
+  </style>
+</head>
+<body>
+  <h1>2025年海大集团数智节·抽奖系统</h1>
+
+  <!-- 登录卡片 -->
+  <div class="card" id="loginBox">
+    <h2>登录</h2>
+    <div>用户名：<input id="u" placeholder="" /></div>
+    <div style="margin-top:8px;">密码：<input id="p" type="password" placeholder="" /></div>
+    <div style="margin-top:10px;"><button id="loginBtn">登录</button></div>
+    <div id="loginMsg"></div>
+  </div>
+
+  <!-- 配置 + 看板 + 名单 -->
+  <div class="row" id="cfgRow" style="display:none;">
+    <!-- 左侧：配置 -->
+    <div>
+      <div class="card">
+        <h2>抽奖方案配置</h2>
+
+        <h3>配额设置（修改即清空历史并重置库存）</h3>
+        <div>一等奖：<input id="q1" type="number" min="0" value="35"></div>
+        <div>二等奖：<input id="q2" type="number" min="0" value="70"></div>
+        <div>三等奖：<input id="q3" type="number" min="0" value="130"></div>
+        <div>阳光普照：<input id="qc" type="number" min="0" value="800"></div>
+        <div style="margin-top:8px;"><button id="btnTotals">更新并重置</button></div>
+
+        <h3 style="margin-top:16px;">时间/节奏参数</h3>
+        <div>
+          活动开始时间（本地）：
+          <input id="start_dt" type="datetime-local" step="1" />
+          <button id="btnNow" type="button">现在</button>
+          <button id="btnClear" type="button">清空</button>
+        </div>
+        <div>总时长(分钟)：<input id="duration_min" type="number" value="180"></div>
+        <div>W1/W2/W3占比：
+          <input id="share_w1" type="number" step="0.01" value="0.40">
+          <input id="share_w2" type="number" step="0.01" value="0.35">
+          <input id="share_w3" type="number" step="0.01" value="0.25">
+        </div>
+        <div>alpha/m_min/m_max：
+          <input id="alpha" type="number" step="0.1" value="1.0">
+          <input id="m_min" type="number" step="0.1" value="0.6">
+          <input id="m_max" type="number" step="0.1" value="1.6">
+        </div>
+        <div>p_na[min,max]：
+          <input id="pna_min" type="number" step="0.01" value="0.10">
+          <input id="pna_max" type="number" step="0.01" value="0.60">
+        </div>
+        <div>滑动窗口B / 期望非阳光普照：
+          <input id="slide_B" type="number" value="10">
+          <input id="slide_target" type="number" step="0.1" value="2.0">
+        </div>
+        <div style="margin-top:8px;">
+          <button id="btnCfg">保存参数</button>
+          <button id="btnReset">仅重置库存+清空记录</button>
+        </div>
+        <div id="cfgMsg"></div>
+      </div>
+    </div>
+
+    <!-- 右侧：看板 + 名单 -->
+    <div>
+      <div class="card">
+        <h2>实时看板</h2>
+        <div id="board" class="muted" style="margin-bottom:8px;"></div>
+        <div><button id="btnRefresh">刷新</button></div>
+
+        <h3 style="margin-top:16px;">当前库存</h3>
+        <table>
+          <thead><tr><th>奖项</th><th>剩余/总量</th></tr></thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>中奖名单</h2>
+        <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:8px; align-items:end;">
+          <div>工号：<input id="w_empId" placeholder="" /></div>
+          <div>奖项：
+            <select id="w_level">
+              <option value="">全部</option>
+              <option>一等奖</option><option>二等奖</option>
+              <option>三等奖</option><option>阳光普照奖</option>
+            </select>
+          </div>
+          <div>起始：<input id="w_since" type="datetime-local" /></div>
+          <div>截止：<input id="w_until" type="datetime-local" /></div>
+        </div>
+        <div style="margin-top:8px;">
+          <button id="w_btnQuery">查询</button>
+          <button id="w_btnExport">导出CSV</button>
+        </div>
+        <table class="table-clean" id="w_table">
+          <thead>
+            <tr>
+              <th class="nowrap">时间</th>
+              <th>姓名</th>
+              <th>工号</th>
+              <th class="nowrap">奖项</th>
+              <th class="col-operator">操作员</th>
+              <th class="col-client">机器</th>
+              <th class="nowrap">记录ID</th>
+            </tr>
+          </thead>
+          <tbody id="w_tbody"></tbody>
+        </table>
+
+        <div style="margin-top:8px;">
+          <button id="w_prev">上一页</button>
+          <span id="w_pageInfo"></span>
+          <button id="w_next">下一页</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // —— API 根地址：管理页(3001) -> 工作端API(3000)
+    const API = location.origin.replace(':3001', ':3000');
+    let token = localStorage.getItem('x_token') || '';
+
+    // —— 工具：ms <-> datetime-local
+    function toLocalDatetimeValue(ms) {
+      if (!ms) return '';
+      const d = new Date(ms);
+      const pad = n => String(n).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      const MM = pad(d.getMonth() + 1);
+      const dd = pad(d.getDate());
+      const hh = pad(d.getHours());
+      const mm = pad(d.getMinutes());
+      const ss = pad(d.getSeconds());
+      return `${yyyy}-${MM}-${dd}T${hh}:${mm}:${ss}`;
+    }
+    // 空字符串 → 不覆盖；“清空”按钮会把输入框设空，然后发送 null 以清除开始时间
+    function fromLocalDatetimeValueOrUndefined(val) {
+      if (val === '') return undefined; // 不覆盖
+      const t = new Date(val); const ms = t.getTime();
+      return Number.isNaN(ms) ? undefined : ms;
+    }
+
+    // ===== Winners 列表：admin/staff 通用函数 =====
+    function dtValToMs(v){ return v ? new Date(v).getTime() : null; }
+    function fmt(ms){ return new Date(ms).toLocaleString(); }
+
+    // let W_PAGE = 0, W_LIMIT = 50, W_TOTAL = 0;
+
+    // async function fetchWinners() {
+    //   const empId = document.getElementById('w_empId').value.trim();
+    //   const level = document.getElementById('w_level').value;
+    //   const since = dtValToMs(document.getElementById('w_since').value);
+    //   const until = dtValToMs(document.getElementById('w_until').value);
+
+    //   const qs = new URLSearchParams({
+    //     empId, level,
+    //     since: since ?? '', until: until ?? '',
+    //     limit: W_LIMIT, offset: String(W_PAGE*W_LIMIT)
+    //   });
+    //   const r = await fetch(`${API}/api/draws?` + qs.toString(), { headers:{'x-auth-token':token} });
+    //   const j = await r.json();
+    //   if (!j.ok) throw new Error(j.reason||'查询失败');
+
+    //   W_TOTAL = j.total || 0;
+    //   const tbody = document.getElementById('w_tbody');
+    //   tbody.innerHTML = '';
+    //   (j.items||[]).forEach(row=>{
+    //     const tr = document.createElement('tr');
+    //     tr.innerHTML = `<td>${fmt(row.ts)}</td>
+    //       <td>${row.emp_name||''}</td>
+    //       <td>${row.emp_id||''}</td>
+    //       <td>${row.prize_level}</td>
+    //       <td>${row.operator||''}</td>
+    //       <td>${row.client_id||''}</td>
+    //       <td>${row.id}</td>`;
+    //     tbody.appendChild(tr);
+    //   });
+    //   document.getElementById('w_pageInfo').textContent =
+    //     `第 ${W_PAGE+1} 页 / 共 ${Math.max(1, Math.ceil(W_TOTAL/W_LIMIT))} 页（${W_TOTAL} 条）`;
+    // }
+let W_PAGE = 0, W_LIMIT = 50, W_TOTAL = 0;
+
+    // 奖项 → 彩色徽章
+      function badge(level){
+        const map = {
+          '一等奖': 'pill pill-1',
+          '二等奖': 'pill pill-2',
+          '三等奖': 'pill pill-3',
+          '阳光普照奖': 'pill pill-c'
+        };
+        const cls = map[level] || 'pill pill-c';
+        return `<span class="${cls}">${level}</span>`;
+      }
+      // 时间格式（本地）
+      function fmt(ms){ return new Date(ms).toLocaleString(); }
+
+      // 查询并渲染 tbody（整段替换你原来的 fetchWinners）
+      async function fetchWinners() {
+        const empId = document.getElementById('w_empId').value.trim();
+        const level = document.getElementById('w_level').value;
+        const dtValToMs = v => v ? new Date(v).getTime() : null;
+        const since = dtValToMs(document.getElementById('w_since').value);
+        const until = dtValToMs(document.getElementById('w_until').value);
+
+        const qs = new URLSearchParams({
+          empId, level,
+          since: since ?? '', until: until ?? '',
+          limit: W_LIMIT, offset: String(W_PAGE*W_LIMIT)
+        });
+        const r = await fetch(`${API}/api/draws?` + qs.toString(), { headers:{'x-auth-token':token} });
+        const j = await r.json();
+        if (!j.ok) { alert(j.reason || '查询失败'); return; }
+
+        W_TOTAL = j.total || 0;
+        const tbody = document.getElementById('w_tbody');
+        tbody.innerHTML = '';
+
+        (j.items||[]).forEach(row=>{
+          const idShort = (row.id || '').slice(0,6) + '…';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="nowrap dim">${fmt(row.ts)}</td>
+            <td>${row.emp_name||''}</td>
+            <td class="mono">${row.emp_id||''}</td>
+            <td>${badge(row.prize_level)}</td>
+            <td class="col-operator dim">${row.operator||''}</td>
+            <td class="col-client dim">${row.client_id||''}</td>
+            <td class="mono nowrap">
+              <span title="${row.id}">${idShort}</span>
+              <button class="copy-btn" data-copy="${row.id}">复制</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('w_pageInfo').textContent =
+          `第 ${W_PAGE+1} 页 / 共 ${Math.max(1, Math.ceil(W_TOTAL/W_LIMIT))} 页（${W_TOTAL} 条）`;
+      }
+
+      // 复制ID（加在 <script> 末尾一次即可，别重复加）
+      document.addEventListener('click', (e)=>{
+        const btn = e.target.closest('.copy-btn');
+        if (!btn) return;
+        const text = btn.getAttribute('data-copy') || '';
+        navigator.clipboard.writeText(text).then(()=>{
+          const old = btn.textContent;
+          btn.textContent = '已复制';
+          setTimeout(()=>btn.textContent = old, 900);
+        });
+      });    
+    document.getElementById('w_btnQuery').onclick = ()=>{ W_PAGE=0; fetchWinners().catch(e=>alert(e.message)); };
+    document.getElementById('w_prev').onclick   = ()=>{ if (W_PAGE>0){ W_PAGE--; fetchWinners().catch(e=>alert(e.message)); } };
+    document.getElementById('w_next').onclick   = ()=>{
+      const maxPage = Math.max(0, Math.ceil(W_TOTAL/W_LIMIT)-1);
+      if (W_PAGE < maxPage){ W_PAGE++; fetchWinners().catch(e=>alert(e.message)); }
+    };
+    document.getElementById('w_btnExport').onclick = ()=>{
+      const empId = document.getElementById('w_empId').value.trim();
+      const level = document.getElementById('w_level').value;
+      const since = dtValToMs(document.getElementById('w_since').value);
+      const until = dtValToMs(document.getElementById('w_until').value);
+      const qs = new URLSearchParams({
+        empId, level, since: since ?? '', until: until ?? '', limit: 10000, offset: 0
+      });
+      fetch(`${API}/api/draws/export?` + qs.toString(), { headers:{'x-auth-token':token} })
+        .then(r=>r.blob())
+        .then(b=>{
+          const url = URL.createObjectURL(b);
+          const a = document.createElement('a'); a.href = url; a.download = 'winners.csv'; a.click();
+          setTimeout(()=>URL.revokeObjectURL(url), 1000);
+        });
+    };
+
+    // —— 登录
+    async function login(u,p){
+      const r = await fetch(`${API}/api/login`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ username:u, password:p })
+      });
+      const j = await r.json();
+      if (j.ok && j.role==='admin') {
+        token = j.token; localStorage.setItem('x_token', token);
+        return true;
+      }
+      return (j.reason||'登录失败');
+    }
+
+    // —— 刷新看板 + 回显配置
+    async function refresh() {
+      const r = await fetch(`${API}/api/admin/metrics`, { headers:{'x-auth-token':token} });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.reason||'失败');
+
+      // 看板概要（包含 m_t / d_t / p_na / p_c / p1 / p2 / p3）
+      // const b = document.getElementById('board');
+      // const humanStart = j.cfg.start_ts ? new Date(j.cfg.start_ts).toLocaleString() : '未设置';
+      // b.innerHTML = `
+      //   <div>活动开始：${humanStart}</div>
+      //   <div>窗口：W${(j.window.windowIdx??-1)+1}/3；已过 ${j.window.elapsedMin} 分钟；每窗 ${j.window.winLen} 分钟</div>
+      //   <div>目标累计(至此刻)：${j.window.targetNA_cum.toFixed(1)}；已发非阳光普照：${j.counters.issuedNA}；总发放：${j.counters.issuedAll}</div>
+      //   <div>m_t（当前倍率）=${(j.debug?.m_t??NaN).toFixed ? j.debug.m_t.toFixed(3) : j.debug.m_t}；d_t（时间衰减）=${(j.debug?.d_t??NaN).toFixed ? j.debug.d_t.toFixed(3) : j.debug.d_t}</div>
+      //   <div>p_na(非阳光普照奖概率)=${(j.debug?.p_na??NaN).toFixed ? j.debug.p_na.toFixed(3) : j.debug.p_na}；p_c=${(j.debug?.p_c??NaN).toFixed ? j.debug.p_c.toFixed(3) : j.debug.p_c}</div>
+      //   <div>分层概率：p1=${j.probs.p1.toFixed(3)}，p2=${j.probs.p2.toFixed(3)}，p3=${j.probs.p3.toFixed(3)}</div>
+      //   <div>如果中奖概率高，请调整p_na[max]到0.35-0.45区间,m_max → 往下调（例如从 1.6 调到 1.15~1.25）<div>
+      // `;
+
+      const b = document.getElementById('board');
+      const humanStart = j.cfg.start_ts ? new Date(j.cfg.start_ts).toLocaleString() : '未设置';
+      const winIdx = (j.window.windowIdx ?? -1) + 1;
+
+      const mt  = (j.debug?.m_t ?? NaN);
+      const dt  = (j.debug?.d_t ?? NaN);
+      const pna = (j.debug?.p_na ?? NaN);
+      const pc  = (j.debug?.p_c ?? NaN);
+
+      b.innerHTML = `
+      <div class="board-wrap">
+        <!-- 左：基础信息 -->
+        <div class="board-section">
+          <div class="board-title">活动进度</div>
+          <ul class="board-list">
+            <li><span class="board-key">活动开始</span><span class="board-val">${humanStart}</span></li>
+            <li><span class="board-key">当前窗口</span><span class="board-val">W${winIdx}/3</span></li>
+            <li><span class="board-key">已过/每窗</span><span class="board-val">${j.window.elapsedMin} 分钟 / ${j.window.winLen} 分钟</span></li>
+            <li><span class="board-key">目标累计(至此刻)</span><span class="board-val">${j.window.targetNA_cum.toFixed(1)}</span></li>
+            <li><span class="board-key">已发非阳光普照 / 总发放</span><span class="board-val">${j.counters.issuedNA} / ${j.counters.issuedAll}</span></li>
+          </ul>
+          <div class="board-tip">
+            若非阳光普照率偏高：优先下调 <b>p_na[max]</b> 到 0.35~0.45；再下调 <b>m_max</b> 至 1.15~1.25；必要时降低 <b>alpha</b> 到 0.5~0.7。
+          </div>
+        </div>
+
+        <!-- 右：概率/倍率 KPI -->
+        <div class="board-section">
+          <div class="board-title">实时概率/倍率</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+            <span class="tag tag-mt">m_t（当前倍率）=${isFinite(mt)&&mt.toFixed ? mt.toFixed(3) : mt}</span>
+            <span class="tag tag-dt">d_t（时间衰减）=${isFinite(dt)&&dt.toFixed ? dt.toFixed(3) : dt}</span>
+            <span class="tag tag-pna">p_na=${isFinite(pna)&&pna.toFixed ? pna.toFixed(3) : pna}</span>
+            <span class="tag tag-pc">p_c（阳光普照奖概率）=${isFinite(pc)&&pc.toFixed ? pc.toFixed(3) : pc}</span>
+          </div>
+          <div class="kpi-grid">
+            <div class="kpi">
+              <div class="label">一等奖 p1</div>
+              <div class="num">${j.probs.p1.toFixed(3)}</div>
+            </div>
+            <div class="kpi">
+              <div class="label">二等奖 p2</div>
+              <div class="num">${j.probs.p2.toFixed(3)}</div>
+            </div>
+            <div class="kpi">
+              <div class="label">三等奖 p3</div>
+              <div class="num">${j.probs.p3.toFixed(3)}</div>
+            </div>
+            <div class="kpi">
+              <div class="label">总概率概率 p_na</div>
+              <div class="num">${isFinite(pna)&&pna.toFixed ? pna.toFixed(3) : pna}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      `;
+
+
+      // 库存表
+      const tb = document.getElementById('tb');
+      tb.innerHTML = '';
+      j.prizes.forEach(p=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML = `<td>${p.level}</td><td>${p.remaining} / ${p.total}</td>`;
+        tb.appendChild(tr);
+      });
+
+      // 回显输入框
+      document.getElementById('start_dt').value = toLocalDatetimeValue(j.cfg.start_ts);
+      document.getElementById('duration_min').value = j.cfg.duration_min ?? 180;
+      document.getElementById('share_w1').value = j.cfg.share_w1 ?? 0.40;
+      document.getElementById('share_w2').value = j.cfg.share_w2 ?? 0.35;
+      document.getElementById('share_w3').value = j.cfg.share_w3 ?? 0.25;
+      document.getElementById('alpha').value    = j.cfg.alpha    ?? 1.0;
+      document.getElementById('m_min').value    = j.cfg.m_min    ?? 0.6;
+      document.getElementById('m_max').value    = j.cfg.m_max    ?? 1.6;
+      document.getElementById('pna_min').value  = j.cfg.pna_min  ?? 0.10;
+      document.getElementById('pna_max').value  = j.cfg.pna_max  ?? 0.60;
+      document.getElementById('slide_B').value  = j.cfg.slide_B  ?? 10;
+      document.getElementById('slide_target').value = j.cfg.slide_target ?? 2.0;
+    }
+
+    // —— 事件绑定
+    document.getElementById('loginBtn').onclick = async ()=>{
+      const u = document.getElementById('u').value.trim();
+      const p = document.getElementById('p').value.trim();
+      const ret = await login(u,p);
+      const msg = document.getElementById('loginMsg');
+      if (ret===true) {
+        document.getElementById('loginBox').style.display='none';
+        document.getElementById('cfgRow').style.display='grid';
+        await refresh();
+        await fetchWinners(); // 登录后自动加载“中奖名单”
+      } else {
+        msg.className='err'; msg.textContent = ret;
+      }
+    };
+
+    document.getElementById('btnTotals').onclick = async ()=>{
+      const q1 = Number(document.getElementById('q1').value||0);
+      const q2 = Number(document.getElementById('q2').value||0);
+      const q3 = Number(document.getElementById('q3').value||0);
+      const qc = Number(document.getElementById('qc').value||0);
+      const r = await fetch(`${API}/api/admin/setTotals`, {
+        method:'POST', headers:{'Content-Type':'application/json','x-auth-token':token},
+        body: JSON.stringify({ q1,q2,q3,qc })
+      });
+      const j = await r.json();
+      const msg = document.getElementById('cfgMsg');
+      if (j.ok) { msg.className='ok'; msg.textContent='已更新配额并重置；历史已清空'; await refresh(); }
+      else { msg.className='err'; msg.textContent=j.reason||'失败'; }
+    };
+
+    document.getElementById('btnCfg').onclick = async ()=>{
+      // 如果时间输入框是空的，就不发 start_ts 字段（不覆盖服务器已有值）
+      const maybeStart = fromLocalDatetimeValueOrUndefined(document.getElementById('start_dt').value);
+      const body = {
+        duration_min: Number(document.getElementById('duration_min').value||180),
+        share_w1:     Number(document.getElementById('share_w1').value||0.40),
+        share_w2:     Number(document.getElementById('share_w2').value||0.35),
+        share_w3:     Number(document.getElementById('share_w3').value||0.25),
+        alpha:        Number(document.getElementById('alpha').value||1.0),
+        m_min:        Number(document.getElementById('m_min').value||0.6),
+        m_max:        Number(document.getElementById('m_max').value||1.6),
+        pna_min:      Number(document.getElementById('pna_min').value||0.10),
+        pna_max:      Number(document.getElementById('pna_max').value||0.60),
+        slide_B:      Number(document.getElementById('slide_B').value||10),
+        slide_target: Number(document.getElementById('slide_target').value||2.0),
+      };
+      if (maybeStart !== undefined) body.start_ts = maybeStart;
+
+      const r = await fetch(`${API}/api/admin/config`, {
+        method:'POST', headers:{'Content-Type':'application/json','x-auth-token':token},
+        body: JSON.stringify(body)
+      });
+      const j = await r.json();
+      const msg = document.getElementById('cfgMsg');
+      if (j.ok) { msg.className='ok'; msg.textContent='参数已保存'; await refresh(); }
+      else { msg.className='err'; msg.textContent=j.reason||'失败'; }
+    };
+
+    document.getElementById('btnReset').onclick = async ()=>{
+      const r = await fetch(`${API}/api/admin/reset`, { method:'POST', headers:{'x-auth-token':token} });
+      const j = await r.json();
+      const msg = document.getElementById('cfgMsg');
+      if (j.ok) { msg.className='ok'; msg.textContent='已重置库存并清空记录'; await refresh(); }
+      else { msg.className='err'; msg.textContent=j.reason||'失败'; }
+    };
+
+    document.getElementById('btnRefresh').onclick = refresh;
+
+    // “现在/清空”按钮
+    document.getElementById('btnNow').onclick = () => {
+      document.getElementById('start_dt').value = toLocalDatetimeValue(Date.now());
+    };
+    document.getElementById('btnClear').onclick = async () => {
+      // 清空输入框 + 发送 null 清除服务器开始时间
+      document.getElementById('start_dt').value = '';
+      const r = await fetch(`${API}/api/admin/config`, {
+        method:'POST', headers:{'Content-Type':'application/json','x-auth-token':token},
+        body: JSON.stringify({ start_ts: null })
+      });
+      const j = await r.json();
+      if (j.ok) await refresh();
+    };
+  </script>
+</body>
+</html>
