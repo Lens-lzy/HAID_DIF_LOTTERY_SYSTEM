@@ -67,10 +67,12 @@ HAID_DIF_lottery/
 │   └── style/             # 样式扩展（可选）
 ├── lottery.db             # SQLite 数据库文件
 └── backups/               # 自动备份目录
+```bash
 
 ---
 
 ## ☎ 联系方式
 
 - 如果有任何使用上的问题，请直接联系我的邮箱：**stevenleo@gmail.com**
+
 
